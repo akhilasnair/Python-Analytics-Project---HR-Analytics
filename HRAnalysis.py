@@ -61,12 +61,6 @@ print(data.hist())
 test_val = data['satisfaction_level'][data['Turnover'] == 0].mean()
 print(stats.ttest_1samp(a=  data[data['Turnover']==1]['satisfaction_level'],popmean = test_val))
 
-#Splitting data into train and test data
-train_data, test_data = train_test_split(data, test_size=0.25)
-print(len(test_data))
-print(len(train_data))
-print(len(data))
-
 #feature selection
 X = ["satisfaction_level","last_evaluation","ProjectCount","MonthlyHours","Experience","Work_accident","promotion_last_5years"]
 Y = ["Turnover"]
