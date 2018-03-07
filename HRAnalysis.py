@@ -1,19 +1,17 @@
 #import
-import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy import stats
 from sklearn.model_selection import train_test_split
-from sklearn.feature_selection import SelectKBest
-from sklearn.feature_selection import chi2
 from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import ExtraTreesClassifier
 import statsmodels.api as sm
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import roc_curve
 from sklearn import model_selection
-
+from sklearn.feature_selection import RFE
+from sklearn.naive_bayes import GaussianNB
+from sklearn import tree
 
 #Read data from the file
 data = pd.read_csv("C:/Users/akhil/Downloads/HR_comma_sep.csv",index_col=None)
@@ -61,21 +59,32 @@ print(data.hist())
 test_val = data['satisfaction_level'][data['Turnover'] == 0].mean()
 print(stats.ttest_1samp(a=  data[data['Turnover']==1]['satisfaction_level'],popmean = test_val))
 
+dummies = ['Department', 'salary']
+for value in dummies:
+    dummy_list = 'value' + '_' + value
+    dummy_list = pd.get_dummies(data[value], prefix = value)
+    datas = data.join(dummy_list)
+    data = datas
+data.drop(labels=['Department','salary'],axis=1,inplace=True)
+data.drop(labels=['Department_RandD','salary_high'],axis=1,inplace=True)
+cols = data.columns.values.tolist()
+print(cols)
+    
 #feature selection
-X = ["satisfaction_level","last_evaluation","ProjectCount","MonthlyHours","Experience","Work_accident","promotion_last_5years"]
 Y = ["Turnover"]
-feature_test = SelectKBest(score_func=chi2, k=3)
-fit = feature_test.fit(data[X],data[Y])
-np.set_printoptions(precision=5)
-print(fit.scores_)
-#Feature selection using extratreesclassifier
-feature_test = ExtraTreesClassifier()
+X = [i for i in cols if i not in Y]
+print(X)
+print(Y)
 y=data[Y]
-feature_test.fit(data[X], y.values.ravel())
-print(feature_test.feature_importances_)
-#we are choosing the top 4 variables which are satisfaction_level,ProjectCount,last_evaluation and Experience
+#feature selection using RFE
+model = LogisticRegression()
+rfe_checking = RFE(model,10)
+fit = rfe_checking.fit(data[X],y.values.ravel())
+print(fit.support_)
+print(fit.ranking_)
+#we are choosing the top 10 variables
 #Modelling Logistic regression
-Xrel=["satisfaction_level","last_evaluation","ProjectCount","Experience"]
+Xrel=['satisfaction_level','Work_accident','promotion_last_5years','Department_accounting','Department_hr','Department_marketing','Department_support', 'Department_technical', 'salary_low', 'salary_medium']
 logit_model=sm.Logit(data[Y],data[Xrel])
 result=logit_model.fit()
 print(result.summary()) #all values are relevant
@@ -98,11 +107,48 @@ print(result.mean()) #it gives 76% prediction. This proves our model is not over
 matrix = confusion_matrix(y_test,pred)
 print(matrix)
 
+#Naive Bayes
+model1 = GaussianNB()
+model1.fit(Xrel_train,y_train.values.ravel())
+predicted = model1.predict(Xrel_test)
+print("Naive Bayes {}".format(model1.score(Xrel_test,y_test)))
+#Decision Tree
+clf = tree.DecisionTreeClassifier()
+clf = clf.fit(Xrel_train,y_train.values.ravel())
+predit = clf.predict(Xrel_test)
+print("decision tree {}".format(clf.score(Xrel_test,y_test)))
+
 #roc curve
 roc_logistic = roc_auc_score(y_test, logicmodel.predict(Xrel_test))
 logic_fpr, logic_tpr, logic_thresholds = roc_curve(y_test, logicmodel.predict_proba(Xrel_test)[:,1])
 plt.figure()
 plt.plot(logic_fpr, logic_tpr, label='Logistic Regression (area = %0.2f)' % roc_logistic)
+plt.plot([0, 1], [0, 1],'r--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('ROC Curve')
+plt.legend(loc="lower right")
+plt.show()
+
+roc_naivebayes = roc_auc_score(y_test, model1.predict(Xrel_test))
+fpr, tpr, thresholds = roc_curve(y_test, model1.predict_proba(Xrel_test)[:,1])
+plt.figure()
+plt.plot(logic_fpr, logic_tpr, label='Naive Bayes (area = %0.2f)' % roc_naivebayes)
+plt.plot([0, 1], [0, 1],'r--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('ROC Curve')
+plt.legend(loc="lower right")
+plt.show()
+
+roc_decisiontree = roc_auc_score(y_test, clf.predict(Xrel_test))
+logic_fpr, logic_tpr, logic_thresholds = roc_curve(y_test, clf.predict_proba(Xrel_test)[:,1])
+plt.figure()
+plt.plot(logic_fpr, logic_tpr, label='Decision Tree (area = %0.2f)' % roc_decisiontree)
 plt.plot([0, 1], [0, 1],'r--')
 plt.xlim([0.0, 1.0])
 plt.ylim([0.0, 1.05])
