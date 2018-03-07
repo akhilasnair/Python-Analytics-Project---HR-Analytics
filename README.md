@@ -54,3 +54,11 @@ Logistic model
 
 Data is split into train and test data on the ratio 75%-25%. Logistic model is fed with the train data and predictions are made on the test data. This model gives an accuracy of 76%
 10 fold cross validation is also preformed which also gives an accuracy of 76%
+
+Naive Bayes
+Naive Bayes gave only 71% accuracy
+
+Decision Tree
+Decision Tree gave 89%
+
+We can conclude that Decision Tree is the best alogorithm among three

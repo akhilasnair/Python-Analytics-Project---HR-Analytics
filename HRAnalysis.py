@@ -132,6 +132,7 @@ plt.title('ROC Curve')
 plt.legend(loc="lower right")
 plt.show()
 
+
 roc_naivebayes = roc_auc_score(y_test, model1.predict(Xrel_test))
 fpr, tpr, thresholds = roc_curve(y_test, model1.predict_proba(Xrel_test)[:,1])
 plt.figure()
